@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math/big"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
@@ -90,7 +92,10 @@ to quickly create a Cobra application.`,
 			log.Fatal(err)
 		}
 
-		s := make([]string, len(result))
+		/* log.Println("result", result) */
+
+		/* s := make([]string, len(result)) */
+		var strSlice []string
 		// Results will be logged in the increasing order of balance.
 		for _, r := range result {
 			var acc Signature
@@ -98,15 +103,16 @@ to quickly create a Cobra application.`,
 			if err := r.Unmarshal(&acc); err != nil {
 				log.Fatal(err)
 			}
-			/* log.Printf("%s => %v\n", r.Key(), acc) */
+			log.Printf("%s", r.Key())
+			fmt.Println("sig", acc)
 
 			// Put our address results in a slice, these are not comma separated like arrays
-			s = append(s, r.Key())
+			strSlice = append(strSlice, r.Key())
 
 		}
 
 		// Print (later compare) after range function is completed and slice is populated
-		/* log.Println("Slice", s) */
+		log.Println("Slice", strSlice)
 
 		rinkebyWS := os.Getenv("RINKEBY_WS")
 		/* uKey := os.Getenv("PRIVATE_KEY") */
@@ -122,7 +128,7 @@ to quickly create a Cobra application.`,
 			log.Fatal(err)
 		} */
 
-		contractAddress := common.HexToAddress("0x3437030B6992Cd309e362269187a1b104DE0130E")
+		contractAddress := common.HexToAddress("0x2d82DDb509E05a58067265d47f8fCd5e2857EFFE")
 		query := ethereum.FilterQuery{
 			// FromBlock should make this a lot more efficient, don't forget to change..
 			FromBlock: big.NewInt(10485867),
@@ -139,16 +145,43 @@ to quickly create a Cobra application.`,
 		}
 
 		// Slice to hold data from events
-		s2 := make([]string, len(logs))
+		/* s2 := make([]string, len(logs)) */
+		/* s := make([]string, len(result)) */
+		var s2 []string
 
 		for _, vLog := range logs {
 
-			// Let's see if we have addresses, keeping as we may use this for operations later..
+			// Let's see if we have addresses, keeping, as we may use this for operations later..
 			/* fmt.Println("Pledgee", common.HexToAddress(vLog.Topics[1].Hex())) */
 
 			toAppend := common.HexToAddress(vLog.Topics[1].Hex())
 
+			/* amounts := common.FromHex(vLog.Topics[2].Hex()) */
+			trimmed := common.TrimLeftZeroes(vLog.Topics[2].Bytes())
+			/* if err != nil {
+				log.Fatal(err)
+			} */
+
+			fmt.Println("trimmed", hex.EncodeToString(trimmed))
+
+			encoded := hex.EncodeToString(trimmed)[1:]
+			fmt.Println("encoded", encoded)
+
+			/* hexutil.Encode()
+
+			padded := hexutil.DecodeBig()
+			fmt.Println("padded", padded) */
+
+			amount2, err := hexutil.DecodeBig("0x" + encoded)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Println("amount", amount2)
+
 			s2 = append(s2, toAppend.String())
+
+			fmt.Println("s2", s2)
 
 			// Grab pledge amount (in wei), log as string here, keeping as we may use this for operations later..
 			/* fmt.Println("PValue", string(vLog.Topics[2].Big().String())) */
@@ -173,16 +206,26 @@ to quickly create a Cobra application.`,
 		/* log.Println("before mod s1", s)
 		log.Println("Before mod", s2) */
 
+		/* var s3 []string */
+
 		// Check slice a (s) against slice b (s2)
-		for i := 0; i < len(s2); i++ {
-			idx := slices.Contains(s, s2[i])
+		for i := 0; i < len(strSlice); i++ {
+			idx := slices.Contains(s2, strSlice[i])
+			log.Println("bool1", strSlice[i])
+			log.Println("bool", idx)
 			if idx {
-				RemoveIndex(s2, i)
+				log.Println("index", slices.Index(s2, strSlice[i]))
+				RemoveIndex(s2, slices.Index(s2, strSlice[i]))
+			} else {
+
 			}
 		}
-
 		// Omit duplicates from slice, and this is our "to sign" list
 		log.Println("Slice after mod", removeDuplicateStr(s2))
+		// This is database addresses vvv
+		log.Println("strSlice", strSlice)
+		/* log.Println("s2 zero index", s2[0])
+		log.Println("first s2", removeDuplicateStr(s2[0:1])) */
 
 	},
 }
