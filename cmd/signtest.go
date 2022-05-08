@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+
+	/* "net/url" */
 	"os"
 
 	"github.com/ethereum/go-ethereum/common/math"
@@ -76,6 +78,44 @@ to quickly create a Cobra application.`,
 			},
 		}
 
+		// Get typed data for api
+		/* dataJson, err := json.Unmarshal(signerData)
+		if err != nil {
+			log.Fatal(err)
+		} */
+
+		fmt.Println("dis", signerData)
+
+		/* compressed := compressLZW(string(dataJson)) */
+
+		formatted, err := signerData.Format()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("format", formatted)
+
+		/* lzwer := lzw.NewWriter(os.Stdout, 0, 8)
+
+
+
+		this, err := lzwer.Write(signerData.)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("dis", this) */
+
+		/* encoder := base64.NewEncoder(base64.StdEncoding, os.Stdout)
+
+		encoder.Write() */
+
+		/* fmt.Println("comp", compressed) */
+
+		/* urlData := url.Values{"typedData": {string(dataJson[:])}}
+
+		fmt.Println("enc", urlData.Encode()) */
+
 		signed, err := signerv4.SignTypedDataV4(signerData, privateKey, big.NewInt(4))
 		if err != nil {
 			log.Fatal(err)
@@ -99,4 +139,30 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// signtestCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func compressLZW(testStr string) []int {
+	code := 256
+	dictionary := make(map[string]int)
+	for i := 0; i < 256; i++ {
+		dictionary[string(i)] = i
+	}
+
+	currChar := ""
+	result := make([]int, 0)
+	for _, c := range []byte(testStr) {
+		phrase := currChar + string(c)
+		if _, isTrue := dictionary[phrase]; isTrue {
+			currChar = phrase
+		} else {
+			result = append(result, dictionary[currChar])
+			dictionary[phrase] = code
+			code++
+			currChar = string(c)
+		}
+	}
+	if currChar != "" {
+		result = append(result, dictionary[currChar])
+	}
+	return result
 }
