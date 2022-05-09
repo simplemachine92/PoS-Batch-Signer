@@ -11,18 +11,23 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"time"
 
 	firebase "firebase.google.com/go"
 
-	"google.golang.org/api/option"
+	"github.com/ethereum/go-ethereum/crypto"
+	signercore "github.com/ethereum/go-ethereum/signer/core"
+	signerv4 "github.com/status-im/status-go/services/typeddata"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slices"
+	"google.golang.org/api/option"
 )
 
 // signCmd represents the sign command
@@ -36,18 +41,29 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+
 		if len(args) < 1 {
 			log.Fatal("Username not specified")
 		}
-		address := args[0]
+		/* address := args[0] */
 
 		err := godotenv.Load()
 		if err != nil {
 			log.Fatal("Error loading .env file")
 		}
 
-		fmt.Println("Signing to address:", address)
-		fmt.Println("Message Input:", message)
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
+
+		pKey := os.Getenv("PRIVATE_KEY")
+
+		privateKey, err := crypto.HexToECDSA(pKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("Signing to all pending users with Msg:", message)
 
 		ctx := context.Background()
 		conf := &firebase.Config{
@@ -79,11 +95,6 @@ to quickly create a Cobra application.`,
 			TypedData string `json:"typedData"`
 		}
 
-		/* type Copy struct {
-			key       string
-			signature Signature
-		} */
-
 		// Call our FB Realtime Database and return what matches the request query
 		q := client.NewRef("PoS").OrderByKey()
 
@@ -92,10 +103,8 @@ to quickly create a Cobra application.`,
 			log.Fatal(err)
 		}
 
-		/* log.Println("result", result) */
-
-		/* s := make([]string, len(result)) */
 		var strSlice []string
+
 		// Results will be logged in the increasing order of balance.
 		for _, r := range result {
 			var acc Signature
@@ -103,8 +112,8 @@ to quickly create a Cobra application.`,
 			if err := r.Unmarshal(&acc); err != nil {
 				log.Fatal(err)
 			}
-			log.Printf("%s", r.Key())
-			fmt.Println("sig", acc)
+			/* log.Printf("%s", r.Key())
+			fmt.Println("sig", acc) */
 
 			// Put our address results in a slice, these are not comma separated like arrays
 			strSlice = append(strSlice, r.Key())
@@ -112,7 +121,7 @@ to quickly create a Cobra application.`,
 		}
 
 		// Print (later compare) after range function is completed and slice is populated
-		log.Println("Slice", strSlice)
+		/* log.Println("Slice", strSlice) */
 
 		rinkebyWS := os.Getenv("RINKEBY_WS")
 		/* uKey := os.Getenv("PRIVATE_KEY") */
@@ -144,92 +153,137 @@ to quickly create a Cobra application.`,
 			log.Fatal(err)
 		}
 
-		// Slice to hold data from events
-		/* s2 := make([]string, len(logs)) */
-		/* s := make([]string, len(result)) */
 		var s2 []string
+
+		items := []donation{}
+
+		box := donos{items}
 
 		for _, vLog := range logs {
 
 			// Let's see if we have addresses, keeping, as we may use this for operations later..
 			/* fmt.Println("Pledgee", common.HexToAddress(vLog.Topics[1].Hex())) */
-
 			toAppend := common.HexToAddress(vLog.Topics[1].Hex())
 
-			/* amounts := common.FromHex(vLog.Topics[2].Hex()) */
 			trimmed := common.TrimLeftZeroes(vLog.Topics[2].Bytes())
-			/* if err != nil {
-				log.Fatal(err)
-			} */
-
-			fmt.Println("trimmed", hex.EncodeToString(trimmed))
 
 			encoded := hex.EncodeToString(trimmed)[1:]
-			fmt.Println("encoded", encoded)
-
-			/* hexutil.Encode()
-
-			padded := hexutil.DecodeBig()
-			fmt.Println("padded", padded) */
+			/* fmt.Println("encoded", encoded) */
 
 			amount2, err := hexutil.DecodeBig("0x" + encoded)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			fmt.Println("amount", amount2)
+			s := fmt.Sprintf("%.18f", weiToEther(amount2))
+
+			/* fmt.Println(s)
+
+			fmt.Println("ETH Amount", weiToEther(amount2)) */
 
 			s2 = append(s2, toAppend.String())
 
-			fmt.Println("s2", s2)
+			currentDono := donation{
+				from:   toAppend.String(),
+				amount: s,
+				toSign: true,
+			}
 
-			// Grab pledge amount (in wei), log as string here, keeping as we may use this for operations later..
-			/* fmt.Println("PValue", string(vLog.Topics[2].Big().String())) */
+			box.AddItem(currentDono)
 
-			/* domain, err := ens.ReverseResolve(mainnetClient, common.HexToAddress(vLog.Topics[1].Hex()))
-			if err != nil {
-				log.Print(err)
-			} else {
-
-				fmt.Println("User ENS", domain)
-			} */
-			/* pledgeeAddress := common.HexToAddress("0x3437030B6992Cd309e362269187a1b104DE0130E") */
-
-			/* fmt.Println(([]common.Address(event.pledgee))) // foo
-			fmt.Println([]*big.Int(event.pledgeValue))     // bar */
-
-			/* var topics [3]string */
-
-			/* fmt.Println("address (Pledgee):", common.HexToAddress(topics[0])) // 0xe79e73da417710ae99aa2088575580a60415d359acfad9cdd3382d59c80281d4 */
+			/* fmt.Println("box", box.Items) */
 		}
-
-		/* log.Println("before mod s1", s)
-		log.Println("Before mod", s2) */
-
-		/* var s3 []string */
 
 		// Check slice a (s) against slice b (s2)
 		for i := 0; i < len(strSlice); i++ {
 			idx := slices.Contains(s2, strSlice[i])
-			log.Println("bool1", strSlice[i])
-			log.Println("bool", idx)
+			/* log.Println("bool1", strSlice[i])
+			log.Println("bool", idx) */
 			if idx {
 				log.Println("index", slices.Index(s2, strSlice[i]))
 				RemoveIndex(s2, slices.Index(s2, strSlice[i]))
-			} else {
+			}
+		}
+
+		// Omit duplicates from slice, and this is our "to sign" list
+		/* log.Println("Slice after mod", removeDuplicateStr(s2)) */
+		// This is database addresses vvv
+		/* log.Println("strSlice", strSlice) */
+
+		for i := 0; i < len(strSlice); i++ {
+			result, key := isExists(strSlice[i], box.Items)
+
+			if result {
+				box.Items[key].toSign = false
+			}
+		}
+		/* fmt.Println("b0x", box) */
+
+		for i := 0; i < len(box.Items); i++ {
+			if box.Items[i].toSign {
+
+				signerData := signercore.TypedData{
+					Types: signercore.Types{
+						"signature": []signercore.Type{
+							{Name: "sender", Type: "address"},
+							{Name: "recipient", Type: "address"},
+							{Name: "pledge", Type: "string"},
+							{Name: "timestamp", Type: "string"},
+							{Name: "msg", Type: "string"},
+						},
+						"EIP712Domain": []signercore.Type{
+							{Name: "name", Type: "string"},
+							{Name: "version", Type: "string"},
+							{Name: "chainId", Type: "uint256"},
+							{Name: "verifyingContract", Type: "address"},
+						},
+					},
+					PrimaryType: "signature",
+					Domain: signercore.TypedDataDomain{
+						Name:              "ProofOfStake_Pages",
+						Version:           "0",
+						ChainId:           math.NewHexOrDecimal256(4),
+						VerifyingContract: "0x2d82DDb509E05a58067265d47f8fCd5e2857EFFE",
+					},
+					Message: signercore.TypedDataMessage{
+						"sender":    box.Items[i].from,
+						"recipient": "0xb010ca9Be09C382A9f31b79493bb232bCC319f01",
+						"pledge":    box.Items[i].amount,
+						"timestamp": fmt.Sprint(time.Now().Unix()),
+						"msg":       message,
+					},
+				}
+
+				signed, err := signerv4.SignTypedDataV4(signerData, privateKey, big.NewInt(4))
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				fmt.Println("Signature:", signed)
+
+				/* const db = database;
+				   set(ref(db, `PoS/` + _typedData.message.recipient), {
+				     signature: _signature,
+				     message: _typedData.message,
+				     typedData: _compressedData,
+				     raw: _typedData,
+				   }); */
 
 			}
 		}
-		// Omit duplicates from slice, and this is our "to sign" list
-		log.Println("Slice after mod", removeDuplicateStr(s2))
-		// This is database addresses vvv
-		log.Println("strSlice", strSlice)
-		/* log.Println("s2 zero index", s2[0])
-		log.Println("first s2", removeDuplicateStr(s2[0:1])) */
-
 	},
 }
 var message string
+
+type donation struct {
+	from   string
+	amount string
+	toSign bool
+}
+
+type donos struct {
+	Items []donation
+}
 
 /* var creditAmount int64 */
 
@@ -255,4 +309,32 @@ func removeDuplicateStr(strSlice []string) []string {
 		}
 	}
 	return list
+}
+
+const (
+	Wei   = 1
+	GWei  = 1e9
+	Ether = 1e18
+)
+
+func weiToEther(wei *big.Int) *big.Float {
+	return new(big.Float).Quo(new(big.Float).SetInt(wei), big.NewFloat(Ether))
+}
+
+func (donoBox *donos) AddItem(item donation) []donation {
+	donoBox.Items = append(donoBox.Items, item)
+	return donoBox.Items
+}
+
+func isExists(id string, box2 []donation) (result bool, rKey int) {
+	result = false
+	rKey = 0
+	for key, donoor := range box2 {
+		if donoor.from == id {
+			result = true
+			rKey = key
+			break
+		}
+	}
+	return result, rKey
 }

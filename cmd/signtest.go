@@ -66,7 +66,7 @@ to quickly create a Cobra application.`,
 			Domain: signercore.TypedDataDomain{
 				Name:              "ProofOfStake_Pages",
 				Version:           "0",
-				ChainId:           math.NewHexOrDecimal256(0x4),
+				ChainId:           math.NewHexOrDecimal256(4),
 				VerifyingContract: "0x2d82DDb509E05a58067265d47f8fCd5e2857EFFE",
 			},
 			Message: signercore.TypedDataMessage{
@@ -78,22 +78,38 @@ to quickly create a Cobra application.`,
 			},
 		}
 
+		type Signature struct {
+			Message struct {
+				Msg       string `json:"msg"`
+				Pledge    string `json:"pledge"`
+				Recipient string `json:"recipient"`
+				Sender    string `json:"sender"`
+				Timestamp string `json:"timestamp"`
+			} `json:"message"`
+			Signature string `json:"signature"`
+			TypedData string `json:"typedData"`
+		}
+
 		// Get typed data for api
 		/* dataJson, err := json.Unmarshal(signerData)
 		if err != nil {
 			log.Fatal(err)
 		} */
 
-		fmt.Println("dis", signerData)
+		/* var s Signature
+
+		stringy, err := json.Unmarshal([]byte(signercore.TypedDataMessage), &s)
+
+		fmt.Println("dis", signerData) */
 
 		/* compressed := compressLZW(string(dataJson)) */
 
-		formatted, err := signerData.Format()
+		/* formatted, err := signercore.
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println("format", formatted)
+		fmt.Println("format", formatted) */
 
 		/* lzwer := lzw.NewWriter(os.Stdout, 0, 8)
 
