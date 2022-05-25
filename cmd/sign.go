@@ -95,6 +95,12 @@ to quickly create a Cobra application.`,
 			TypedData string `json:"typedData"`
 		}
 
+		type DbSignature struct {
+			signercore.TypedData
+			Signature2 string `json:"signature"`
+			TypedData2 string `json:"typedData"`
+		}
+
 		// Call our FB Realtime Database and return what matches the request query
 		q := client.NewRef("PoS").OrderByKey()
 
@@ -265,12 +271,20 @@ to quickly create a Cobra application.`,
 
 				usersRef := ref.Child(box.Items[i].from)
 
-				err2 := usersRef.Set(ctx, signercore.TypedData{
+				/* type DbSignature struct {
+					signercore.TypedData
+					Signature string `json:"signature"`
+					TypedData2 string `json:"typedData"`
+				} */
 
-					Message: signerData.Message,
-					Domain:  signerData.Domain,
-					//typed data would be here after
-
+				err2 := usersRef.Set(ctx, DbSignature{
+					signercore.TypedData{
+						Message: signerData.Message,
+						Domain:  signerData.Domain,
+					},
+					signed.String(),
+					// after properly encoding, we will put typeddata here
+					message,
 				})
 				if err2 != nil {
 					log.Fatalln("Error setting value:", err)
