@@ -42,9 +42,9 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		if len(args) < 1 {
-			log.Fatal("Username not specified")
-		}
+		/* if len(args) < 1 {
+			log.Fatal("Message not specified")
+		} */
 		/* address := args[0] */
 
 		err := godotenv.Load()
@@ -97,6 +97,8 @@ to quickly create a Cobra application.`,
 
 		// Call our FB Realtime Database and return what matches the request query
 		q := client.NewRef("PoS").OrderByKey()
+
+		ref := client.NewRef("PoS")
 
 		result, err := q.GetOrdered(ctx)
 		if err != nil {
@@ -246,8 +248,8 @@ to quickly create a Cobra application.`,
 						VerifyingContract: "0x2d82DDb509E05a58067265d47f8fCd5e2857EFFE",
 					},
 					Message: signercore.TypedDataMessage{
-						"sender":    box.Items[i].from,
-						"recipient": "0xb010ca9Be09C382A9f31b79493bb232bCC319f01",
+						"sender":    "0xb010ca9Be09C382A9f31b79493bb232bCC319f01",
+						"recipient": box.Items[i].from,
 						"pledge":    box.Items[i].amount,
 						"timestamp": fmt.Sprint(time.Now().Unix()),
 						"msg":       message,
@@ -261,13 +263,18 @@ to quickly create a Cobra application.`,
 
 				fmt.Println("Signature:", signed)
 
-				/* const db = database;
-				   set(ref(db, `PoS/` + _typedData.message.recipient), {
-				     signature: _signature,
-				     message: _typedData.message,
-				     typedData: _compressedData,
-				     raw: _typedData,
-				   }); */
+				usersRef := ref.Child(box.Items[i].from)
+
+				err2 := usersRef.Set(ctx, signercore.TypedData{
+
+					Message: signerData.Message,
+					Domain:  signerData.Domain,
+					//typed data would be here after
+
+				})
+				if err2 != nil {
+					log.Fatalln("Error setting value:", err)
+				}
 
 			}
 		}
@@ -284,8 +291,6 @@ type donation struct {
 type donos struct {
 	Items []donation
 }
-
-/* var creditAmount int64 */
 
 func init() {
 	rootCmd.AddCommand(signCmd)
