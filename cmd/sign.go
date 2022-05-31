@@ -12,13 +12,9 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
-
-	"github.com/vmihailenco/msgpack/v5"
-
-	"bytes"
-	"compress/lzw"
-	b64 "encoding/base64"
 
 	firebase "firebase.google.com/go"
 
@@ -258,10 +254,10 @@ to quickly create a Cobra application.`,
 						Name:              "ProofOfStake_Pages",
 						Version:           "0",
 						ChainId:           math.NewHexOrDecimal256(4),
-						VerifyingContract: "0x2d82DDb509E05a58067265d47f8fCd5e2857EFFE",
+						VerifyingContract: "0x035124Af967C97122A39c6EE0f787AE2fA9050f2",
 					},
 					Message: signercore.TypedDataMessage{
-						"sender":    "0xb010ca9Be09C382A9f31b79493bb232bCC319f01",
+						"sender":    "0x55A178b6AfB3879F4a16c239A9F528663e7d76b3",
 						"recipient": box.Items[i].from,
 						"pledge":    box.Items[i].amount,
 						"timestamp": fmt.Sprint(time.Now().Unix()),
@@ -284,10 +280,10 @@ to quickly create a Cobra application.`,
 						Name:              "ProofOfStake_Pages",
 						Version:           "0",
 						ChainId:           math.NewHexOrDecimal256(4),
-						VerifyingContract: "0x2d82DDb509E05a58067265d47f8fCd5e2857EFFE",
+						VerifyingContract: "0x035124Af967C97122A39c6EE0f787AE2fA9050f2",
 					},
 					Message: signercore.TypedDataMessage{
-						"sender":    "0xb010ca9Be09C382A9f31b79493bb232bCC319f01",
+						"sender":    "0x55A178b6AfB3879F4a16c239A9F528663e7d76b3",
 						"recipient": box.Items[i].from,
 						"pledge":    box.Items[i].amount,
 						"timestamp": fmt.Sprint(time.Now().Unix()),
@@ -300,7 +296,7 @@ to quickly create a Cobra application.`,
 					log.Fatal(err)
 				}
 
-				litw := 8
+				/* litw := 8 */
 
 				m := dbData3.Map()
 
@@ -311,12 +307,36 @@ to quickly create a Cobra application.`,
 
 				fmt.Println("json?", string(b))
 
-				msgp, err := msgpack.Marshal(m)
+				os.WriteFile("/data.txt", b, 0644)
+
+				// For more granular writes, open a file for writing.
+				f, err := os.Create("./dat.txt")
 				if err != nil {
 					panic(err)
 				}
 
-				/* m := dbData3.Map() */
+				n2, err := f.Write(b)
+
+				fmt.Printf("wrote %d bytes\n", n2)
+
+				// It's idiomatic to defer a `Close` immediately
+				// after opening a file.
+				defer f.Close()
+
+				command := "node parser.js"
+				parts := strings.Fields(command)
+				fmt.Println("parts", parts[0], parts[1:])
+				data, err := exec.Command(parts[0], parts[1:]...).Output()
+				if err != nil {
+					panic(err)
+				}
+
+				output := string(data)
+
+				/* msgp, err := msgpack.Marshal(m)
+				if err != nil {
+					panic(err)
+				}
 
 				var data = []byte(msgp)
 
@@ -336,15 +356,9 @@ to quickly create a Cobra application.`,
 
 				fmt.Println("buf")
 
-				com.Close()
+				com.Close() */
 
 				usersRef := ref.Child(box.Items[i].from)
-
-				/* type DbSignature struct {
-					signercore.TypedData
-					Signature string `json:"signature"`
-					TypedData2 string `json:"typedData"`
-				} */
 
 				err2 := usersRef.Set(ctx, DbSignature{
 					signercore.TypedData{
@@ -355,7 +369,7 @@ to quickly create a Cobra application.`,
 					// after properly encoding, we will put typeddata here where "message" lies rn.
 					/* b64.RawURLEncoding.EncodeToString(buf.Bytes()), */
 					/* b64.URLEncoding.EncodeToString(buf.Bytes()), */
-					b64.RawURLEncoding.EncodeToString(buf.Bytes()),
+					output,
 					/* b64.RawURLEncoding.WithPadding(buf.Bytes()) */
 				})
 				if err2 != nil {

@@ -1,0 +1,24 @@
+{
+  "name": "geth-712-signer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simplemachine92/geth-712-signer.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/simplemachine92/geth-712-signer/issues"
+  },
+  "homepage": "https://github.com/simplemachine92/geth-712-signer#readme",
+  "dependencies": {
+    "@babel/runtime": "^7.18.3",
+    "fs": "^0.0.1-security",
+    "json-url": "^3.0.0"
+  }
+}
