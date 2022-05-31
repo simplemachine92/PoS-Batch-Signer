@@ -42,6 +42,7 @@ require (
 	github.com/status-im/status-go/extkeys v1.1.2 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 )
 
@@ -87,6 +88,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.3.5
 	github.com/wealdtech/go-ens/v3 v3.5.3 // indirect
 	github.com/wealdtech/go-multicodec v1.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect

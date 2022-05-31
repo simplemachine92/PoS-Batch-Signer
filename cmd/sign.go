@@ -14,6 +14,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/vmihailenco/msgpack/v5"
+
 	"bytes"
 	"compress/lzw"
 	b64 "encoding/base64"
@@ -267,7 +269,7 @@ to quickly create a Cobra application.`,
 					},
 				}
 
-				/* dbData := signercore.TypedData{
+				dbData3 := signercore.TypedData{
 					Types: signercore.Types{
 						"signature": []signercore.Type{
 							{Name: "sender", Type: "address"},
@@ -275,12 +277,6 @@ to quickly create a Cobra application.`,
 							{Name: "pledge", Type: "string"},
 							{Name: "timestamp", Type: "string"},
 							{Name: "msg", Type: "string"},
-						},
-						"EIP712Domain": []signercore.Type{
-							{Name: "name", Type: "string"},
-							{Name: "version", Type: "string"},
-							{Name: "chainId", Type: "uint256"},
-							{Name: "verifyingContract", Type: "address"},
 						},
 					},
 					PrimaryType: "signature",
@@ -297,7 +293,7 @@ to quickly create a Cobra application.`,
 						"timestamp": fmt.Sprint(time.Now().Unix()),
 						"msg":       message,
 					},
-				} */
+				}
 
 				signed, err := signerv4.SignTypedDataV4(signerData, privateKey, big.NewInt(4))
 				if err != nil {
@@ -306,12 +302,23 @@ to quickly create a Cobra application.`,
 
 				litw := 8
 
-				b, err := json.Marshal(signerData.Map())
+				m := dbData3.Map()
+
+				b, err := json.Marshal(m)
 				if err != nil {
 					panic(err)
 				}
 
-				var data = []byte(b)
+				fmt.Println("json?", string(b))
+
+				msgp, err := msgpack.Marshal(m)
+				if err != nil {
+					panic(err)
+				}
+
+				/* m := dbData3.Map() */
+
+				var data = []byte(msgp)
 
 				fmt.Printf("input: %#v\n", string(data))
 
@@ -325,29 +332,11 @@ to quickly create a Cobra application.`,
 					fmt.Println("write error:", err)
 				}
 
-				/* b64.URLEncoding.EncodeToString(buf.Bytes()) */
-
 				fmt.Println("wrote", w, "bytes")
 
+				fmt.Println("buf")
+
 				com.Close()
-
-				var output = make([]byte, len(data))
-
-				dec := lzw.NewReader(&buf, lzw.LSB, litw)
-
-				r, err := dec.Read(output)
-
-				fmt.Println("string", b64.URLEncoding.EncodeToString(buf.Bytes()))
-
-				if err != nil {
-					fmt.Println("read error:", err)
-				}
-
-				fmt.Println("read", r, "bytes")
-
-				fmt.Printf("output: %#v\n", string(output[:r]))
-
-				fmt.Println("Signature:", signed)
 
 				usersRef := ref.Child(box.Items[i].from)
 
@@ -360,11 +349,14 @@ to quickly create a Cobra application.`,
 				err2 := usersRef.Set(ctx, DbSignature{
 					signercore.TypedData{
 						Message: signerData.Message,
-						Domain:  signerData.Domain,
+						/* Domain:  signerData.Domain, */
 					},
 					signed.String(),
 					// after properly encoding, we will put typeddata here where "message" lies rn.
-					b64.URLEncoding.EncodeToString(output[:r]),
+					/* b64.RawURLEncoding.EncodeToString(buf.Bytes()), */
+					/* b64.URLEncoding.EncodeToString(buf.Bytes()), */
+					b64.RawURLEncoding.EncodeToString(buf.Bytes()),
+					/* b64.RawURLEncoding.WithPadding(buf.Bytes()) */
 				})
 				if err2 != nil {
 					log.Fatalln("Error setting value:", err)
