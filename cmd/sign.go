@@ -134,7 +134,7 @@ to quickly create a Cobra application.`,
 		// Print (later compare) after range function is completed and slice is populated
 		/* log.Println("Slice", strSlice) */
 
-		rinkebyWS := os.Getenv("RINKEBY_WS")
+		rinkebyWS := os.Getenv("KOVAN_WS")
 		/* uKey := os.Getenv("PRIVATE_KEY") */
 		/* mainWS := os.Getenv("MAINNET_WS") */
 
@@ -148,7 +148,7 @@ to quickly create a Cobra application.`,
 			log.Fatal(err)
 		} */
 
-		contractAddress := common.HexToAddress("0x2d82DDb509E05a58067265d47f8fCd5e2857EFFE")
+		contractAddress := common.HexToAddress("0x7Ea9411959fF856c1956f90b7569eDC3F0421c22")
 		query := ethereum.FilterQuery{
 			// FromBlock should make this a lot more efficient, don't forget to change..
 			FromBlock: big.NewInt(10485867),
@@ -253,8 +253,8 @@ to quickly create a Cobra application.`,
 					Domain: signercore.TypedDataDomain{
 						Name:              "ProofOfStake_Pages",
 						Version:           "0",
-						ChainId:           math.NewHexOrDecimal256(4),
-						VerifyingContract: "0x035124Af967C97122A39c6EE0f787AE2fA9050f2",
+						ChainId:           math.NewHexOrDecimal256(42),
+						VerifyingContract: "0x522149fd0A0c8E2A2ffdb4dBeDB333e533Fbe2Ae",
 					},
 					Message: signercore.TypedDataMessage{
 						"sender":    "0x55A178b6AfB3879F4a16c239A9F528663e7d76b3",
@@ -279,8 +279,8 @@ to quickly create a Cobra application.`,
 					Domain: signercore.TypedDataDomain{
 						Name:              "ProofOfStake_Pages",
 						Version:           "0",
-						ChainId:           math.NewHexOrDecimal256(4),
-						VerifyingContract: "0x035124Af967C97122A39c6EE0f787AE2fA9050f2",
+						ChainId:           math.NewHexOrDecimal256(42),
+						VerifyingContract: "0x522149fd0A0c8E2A2ffdb4dBeDB333e533Fbe2Ae",
 					},
 					Message: signercore.TypedDataMessage{
 						"sender":    "0x55A178b6AfB3879F4a16c239A9F528663e7d76b3",
@@ -291,7 +291,7 @@ to quickly create a Cobra application.`,
 					},
 				}
 
-				signed, err := signerv4.SignTypedDataV4(signerData, privateKey, big.NewInt(4))
+				signed, err := signerv4.SignTypedDataV4(signerData, privateKey, big.NewInt(42))
 				if err != nil {
 					log.Fatal(err)
 				}
