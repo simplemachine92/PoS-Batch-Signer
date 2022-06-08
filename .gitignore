@@ -2,3 +2,4 @@
 .env
 service-account-key.json
 .DS_Store
+dat.txt
