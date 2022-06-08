@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -24,7 +23,6 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/joho/godotenv"
@@ -45,11 +43,6 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		/* if len(args) < 1 {
-			log.Fatal("Message not specified")
-		} */
-		/* address := args[0] */
-
 		err := godotenv.Load()
 		if err != nil {
 			log.Fatal("Error loading .env file")
@@ -60,6 +53,10 @@ to quickly create a Cobra application.`,
 		}
 
 		pKey := os.Getenv("PRIVATE_KEY")
+
+		cAddress := os.Getenv("CONTRACT_ADDRESS")
+
+		signerPublic := os.Getenv("SIGNER_PUBLIC")
 
 		privateKey, err := crypto.HexToECDSA(pKey)
 		if err != nil {
@@ -135,7 +132,6 @@ to quickly create a Cobra application.`,
 		/* log.Println("Slice", strSlice) */
 
 		rinkebyWS := os.Getenv("KOVAN_WS")
-		/* uKey := os.Getenv("PRIVATE_KEY") */
 		/* mainWS := os.Getenv("MAINNET_WS") */
 
 		rClient, err := ethclient.Dial(rinkebyWS)
@@ -148,7 +144,7 @@ to quickly create a Cobra application.`,
 			log.Fatal(err)
 		} */
 
-		contractAddress := common.HexToAddress("0x7Ea9411959fF856c1956f90b7569eDC3F0421c22")
+		contractAddress := common.HexToAddress(cAddress)
 		query := ethereum.FilterQuery{
 			// FromBlock should make this a lot more efficient, don't forget to change..
 			FromBlock: big.NewInt(10485867),
@@ -172,25 +168,9 @@ to quickly create a Cobra application.`,
 
 		for _, vLog := range logs {
 
-			// Let's see if we have addresses, keeping, as we may use this for operations later..
-			/* fmt.Println("Pledgee", common.HexToAddress(vLog.Topics[1].Hex())) */
 			toAppend := common.HexToAddress(vLog.Topics[1].Hex())
 
-			trimmed := common.TrimLeftZeroes(vLog.Topics[2].Bytes())
-
-			encoded := hex.EncodeToString(trimmed)[1:]
-			/* fmt.Println("encoded", encoded) */
-
-			amount2, err := hexutil.DecodeBig("0x" + encoded)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			s := fmt.Sprintf("%.18f", weiToEther(amount2))
-
-			/* fmt.Println(s)
-
-			fmt.Println("ETH Amount", weiToEther(amount2)) */
+			s := fmt.Sprintf("%.18f", weiToEther(vLog.Topics[2].Big()))
 
 			s2 = append(s2, toAppend.String())
 
@@ -202,24 +182,16 @@ to quickly create a Cobra application.`,
 
 			box.AddItem(currentDono)
 
-			/* fmt.Println("box", box.Items) */
 		}
 
 		// Check slice a (s) against slice b (s2)
 		for i := 0; i < len(strSlice); i++ {
 			idx := slices.Contains(s2, strSlice[i])
-			/* log.Println("bool1", strSlice[i])
-			log.Println("bool", idx) */
 			if idx {
 				log.Println("index", slices.Index(s2, strSlice[i]))
 				RemoveIndex(s2, slices.Index(s2, strSlice[i]))
 			}
 		}
-
-		// Omit duplicates from slice, and this is our "to sign" list
-		/* log.Println("Slice after mod", removeDuplicateStr(s2)) */
-		// This is database addresses vvv
-		/* log.Println("strSlice", strSlice) */
 
 		for i := 0; i < len(strSlice); i++ {
 			result, key := isExists(strSlice[i], box.Items)
@@ -228,7 +200,6 @@ to quickly create a Cobra application.`,
 				box.Items[key].toSign = false
 			}
 		}
-		/* fmt.Println("b0x", box) */
 
 		for i := 0; i < len(box.Items); i++ {
 			if box.Items[i].toSign {
@@ -254,10 +225,10 @@ to quickly create a Cobra application.`,
 						Name:              "ProofOfStake_Pages",
 						Version:           "0",
 						ChainId:           math.NewHexOrDecimal256(42),
-						VerifyingContract: "0x522149fd0A0c8E2A2ffdb4dBeDB333e533Fbe2Ae",
+						VerifyingContract: cAddress,
 					},
 					Message: signercore.TypedDataMessage{
-						"sender":    "0x55A178b6AfB3879F4a16c239A9F528663e7d76b3",
+						"sender":    signerPublic,
 						"recipient": box.Items[i].from,
 						"pledge":    box.Items[i].amount,
 						"timestamp": fmt.Sprint(time.Now().Unix()),
@@ -280,10 +251,10 @@ to quickly create a Cobra application.`,
 						Name:              "ProofOfStake_Pages",
 						Version:           "0",
 						ChainId:           math.NewHexOrDecimal256(42),
-						VerifyingContract: "0x522149fd0A0c8E2A2ffdb4dBeDB333e533Fbe2Ae",
+						VerifyingContract: cAddress,
 					},
 					Message: signercore.TypedDataMessage{
-						"sender":    "0x55A178b6AfB3879F4a16c239A9F528663e7d76b3",
+						"sender":    signerPublic,
 						"recipient": box.Items[i].from,
 						"pledge":    box.Items[i].amount,
 						"timestamp": fmt.Sprint(time.Now().Unix()),
@@ -295,8 +266,6 @@ to quickly create a Cobra application.`,
 				if err != nil {
 					log.Fatal(err)
 				}
-
-				/* litw := 8 */
 
 				m := dbData3.Map()
 
@@ -333,31 +302,6 @@ to quickly create a Cobra application.`,
 
 				output := string(data)
 
-				/* msgp, err := msgpack.Marshal(m)
-				if err != nil {
-					panic(err)
-				}
-
-				var data = []byte(msgp)
-
-				fmt.Printf("input: %#v\n", string(data))
-
-				var buf bytes.Buffer
-
-				com := lzw.NewWriter(&buf, lzw.LSB, litw)
-
-				w, err := com.Write(data)
-
-				if err != nil {
-					fmt.Println("write error:", err)
-				}
-
-				fmt.Println("wrote", w, "bytes")
-
-				fmt.Println("buf")
-
-				com.Close() */
-
 				usersRef := ref.Child(box.Items[i].from)
 
 				err2 := usersRef.Set(ctx, DbSignature{
@@ -367,10 +311,7 @@ to quickly create a Cobra application.`,
 					},
 					signed.String(),
 					// after properly encoding, we will put typeddata here where "message" lies rn.
-					/* b64.RawURLEncoding.EncodeToString(buf.Bytes()), */
-					/* b64.URLEncoding.EncodeToString(buf.Bytes()), */
 					output,
-					/* b64.RawURLEncoding.WithPadding(buf.Bytes()) */
 				})
 				if err2 != nil {
 					log.Fatalln("Error setting value:", err)
