@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 Justin Pulley <justinpulley@gitcoin.co>
-
 */
 package cmd
 
@@ -12,6 +11,7 @@ import (
 	"math/big"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -57,9 +57,14 @@ to quickly create a Cobra application.`,
 		cName := os.Getenv("CONTRACT_NAME")
 		cAddress := os.Getenv("CONTRACT_ADDRESS")
 		cVersion := os.Getenv("CONTRACT_VERSION")
+		cChain := os.Getenv("CONTRACT_CHAIN")
 		signerPublic := os.Getenv("SIGNER_PUBLIC")
 		directory := os.Getenv("DB_DIRECTORY")
 		rpc := os.Getenv("WEB_SOCKET_RPC")
+
+		chainInt, err := strconv.ParseInt(cChain, 10, 64)
+
+		cChainb := math.NewHexOrDecimal256(chainInt)
 
 		privateKey, err := crypto.HexToECDSA(pKey)
 		if err != nil {
@@ -211,7 +216,7 @@ to quickly create a Cobra application.`,
 					Domain: signercore.TypedDataDomain{
 						Name:              cName,
 						Version:           cVersion,
-						ChainId:           math.NewHexOrDecimal256(42),
+						ChainId:           cChainb,
 						VerifyingContract: cAddress,
 					},
 					Message: signercore.TypedDataMessage{
@@ -237,7 +242,7 @@ to quickly create a Cobra application.`,
 					Domain: signercore.TypedDataDomain{
 						Name:              cName,
 						Version:           cVersion,
-						ChainId:           math.NewHexOrDecimal256(42),
+						ChainId:           cChainb,
 						VerifyingContract: cAddress,
 					},
 					Message: signercore.TypedDataMessage{
@@ -249,7 +254,7 @@ to quickly create a Cobra application.`,
 					},
 				}
 
-				signed, err := signerv4.SignTypedDataV4(signerData, privateKey, big.NewInt(42))
+				signed, err := signerv4.SignTypedDataV4(signerData, privateKey, big.NewInt(chainInt))
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -305,7 +310,7 @@ to quickly create a Cobra application.`,
 		fmt.Println("Donation Events Total:", len(logs), "\n")
 		fmt.Println("Unique Donation Events:", Counter, "\n")
 		fmt.Println("Unique Signatures (DB):", Counter2+Counter3, "\n")
-		fmt.Println("Sigs Generated This Run:", Counter3, "\n")
+		fmt.Println("Messages Signed/Stored This Run:", Counter3, "\n")
 
 	},
 }
@@ -343,6 +348,7 @@ func init() {
 	rootCmd.AddCommand(signCmd)
 	signCmd.Flags().StringVarP(&message, "message", "m", "", "Message to be signed")
 	signCmd.MarkFlagRequired("message")
+	signCmd.PersistentFlags()
 }
 
 func RemoveIndex(slice []string, index int) []string {
