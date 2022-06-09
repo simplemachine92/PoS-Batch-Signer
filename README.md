@@ -11,6 +11,8 @@ Feel free to modify for your own purposes. In this particular case, parser.js me
 
 Right now, due to muh' bear market constraints, this tool lacks the more granular control over signatures than planned, but I may add them later..
 
+**In the case of PoS, I will provide both the .env and service-account-key.json for Vitaliks convenience**
+
 ## Table of Contents
 
 - [Installation](#installation)
