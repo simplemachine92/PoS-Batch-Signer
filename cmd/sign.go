@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -36,6 +37,16 @@ var signCmd = &cobra.Command{
 	Use:   "sign",
 	Short: "Signs a message to Proof of Stake Donators",
 	Long:  `Signs a message to Proof of Stake Donators.. -m='message' designates the message to be signed`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len([]rune(message)) <= 1 {
+			return errors.New("message string is required")
+		}
+
+		if len([]rune(message)) > 60 {
+			return errors.New("message string must be less than 60 characters")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 
 		err := godotenv.Load()
