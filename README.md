@@ -5,7 +5,7 @@
 This tool uses a Firebase service-account to read/write EIP-712 Signatures to a Firebase Realtime DB
 https://firebase.google.com/docs/database/admin/start
 
-We compare a list of Pledge events emitted from our Smart Contract to our database, to sign and store EIP712 messages to pledgees who have not yet received a message.
+We compare a list of Pledge events emitted from our Smart Contract with our database in order to sign and store EIP712 messages to pledgees who have not yet received a message.
 
 Feel free to modify for your own purposes. In this particular case, parser.js messagePacks and lzw encodes our TypedData for delivery to our front-end a'la [Signator.io](https://github.com/scaffold-eth/scaffold-eth/tree/signatorio)
 
