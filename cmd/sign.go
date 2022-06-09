@@ -49,11 +49,11 @@ var signCmd = &cobra.Command{
 
 		// .env .fun .composable .kinda!
 		pKey := os.Getenv("PRIVATE_KEY")
+		signerPublic := os.Getenv("PUBLIC_KEY")
 		cName := os.Getenv("CONTRACT_NAME")
 		cAddress := os.Getenv("CONTRACT_ADDRESS")
 		cVersion := os.Getenv("CONTRACT_VERSION")
 		cChain := os.Getenv("CONTRACT_CHAIN")
-		signerPublic := os.Getenv("SIGNER_PUBLIC")
 		directory := os.Getenv("DB_DIRECTORY")
 		rpc := os.Getenv("WEB_SOCKET_RPC")
 

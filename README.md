@@ -13,6 +13,8 @@ Right now, due to muh' bear market constraints, this tool lacks the more granula
 
 **In the case of PoS, I will provide both the .env and service-account-key.json for Vitaliks convenience**
 
+He should only have to modify PRIVATE_KEY & PUBLIC_KEY in .env to operate..
+
 ## Table of Contents
 
 - [Installation](#installation)
