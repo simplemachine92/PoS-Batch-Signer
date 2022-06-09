@@ -85,6 +85,12 @@ Unique Signatures (DB): 13
 Sigs Generated This Run: 0
 ```
 
+## A note on Messages
+
+Messages are restricted to < 60 characters due to our on-chain svg's limitations.
+
+Empty Message strings will also result in an error.
+
 ## Support
 
 Please [open an issue](https://github.com/simplemachine92/PoS-Batch-Signer/issues/new) for support, or dm me [@simplemachine92](https://twitter.com/SimpleMachine92)
