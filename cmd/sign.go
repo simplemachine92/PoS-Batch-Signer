@@ -34,13 +34,8 @@ import (
 // signCmd represents the sign command
 var signCmd = &cobra.Command{
 	Use:   "sign",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Signs a message to Proof of Stake Donators",
+	Long:  `Signs a message to Proof of Stake Donators.. -m='message' designates the message to be signed`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		err := godotenv.Load()
