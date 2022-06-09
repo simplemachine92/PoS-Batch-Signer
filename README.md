@@ -31,6 +31,12 @@ git clone https://github.com/simplemachine92/PoS-Batch-Signer.git
 cd pos-batch-signer
 ```
 
+### Install Node deps
+
+```sh
+npm i
+```
+
 ### Copy example.env to .env and modify with your variables
 
 ```sh
@@ -82,7 +88,3 @@ Sigs Generated This Run: 0
 ## Support
 
 Please [open an issue](https://github.com/simplemachine92/PoS-Batch-Signer/issues/new) for support, or dm me [@simplemachine92](https://twitter.com/SimpleMachine92)
-
-## Contributing
-
-Please contribute using [Github Flow](https://guides.github.com/introduction/flow/). Create a branch, add commits, and [open a pull request](https://github.com/fraction/readme-boilerplate/compare/).
