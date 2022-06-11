@@ -93,7 +93,7 @@ Unique Signatures (DB): 13
 Sigs Generated This Run: 0
 ```
 
-or for listen command:
+or listen, which runs as a server, signing based on new contract events
 
 ```sh
 Signed and stored a message for address 0xEB00BA1C44995119c55279d4F628ac19d4d35f7d
