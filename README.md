@@ -59,10 +59,18 @@ Be sure to remove the comment at the top if replacing the vars and not using you
 
 go version go1.18.1 should work regardless of architecture
 
-### There is only **one** command for now..
+### There are two commands for now..
+
+sign
 
 ```sh
 go run main.go sign -m='Your Message'
+```
+
+or listen
+
+```sh
+go run main.go listen -l='Your Message'
 ```
 
 ### **Don't remove the quotes!** For example..
@@ -83,6 +91,14 @@ Unique Donation Events: 13
 Unique Signatures (DB): 13
 
 Sigs Generated This Run: 0
+```
+
+or for listen command:
+
+```sh
+Signed and stored a message for address 0xEB00BA1C44995119c55279d4F628ac19d4d35f7d
+
+Signed so far while listening: 1
 ```
 
 ## A note on Messages
