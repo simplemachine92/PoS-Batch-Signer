@@ -18,6 +18,7 @@ import (
 
 	firebase "firebase.google.com/go"
 
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	signercore "github.com/ethereum/go-ethereum/signer/core"
 	signerv4 "github.com/status-im/status-go/services/typeddata"
@@ -28,22 +29,21 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slices"
 	"google.golang.org/api/option"
 )
 
-// signCmd represents the sign command
-var signCmd = &cobra.Command{
-	Use:   "sign",
-	Short: "Signs a message to Proof of Stake Donators",
-	Long:  `Signs a message to Proof of Stake Donators.. -m='message' designates the message to be signed`,
+// listenCmd represents the listen command
+var listenCmd = &cobra.Command{
+	Use:   "listen",
+	Short: "Listens and Signs",
+	Long:  `Listens and Signs -l='your string' designates the string to be signed`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len([]rune(message)) <= 1 {
-			return errors.New("message string is required")
+		if len([]rune(lmessage)) <= 1 {
+			return errors.New("lmessage string is required")
 		}
 
-		if len([]rune(message)) > 60 {
-			return errors.New("message string must be less than 60 characters")
+		if len([]rune(lmessage)) > 60 {
+			return errors.New("lmessage string must be less than 60 characters")
 		}
 		return nil
 	},
@@ -77,7 +77,7 @@ var signCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		fmt.Println("Signing to all pending users with Msg:", message, "\n")
+		fmt.Println("Signing to new donors with Msg:", lmessage, "\n")
 
 		ctx := context.Background()
 		conf := &firebase.Config{
@@ -97,29 +97,7 @@ var signCmd = &cobra.Command{
 			log.Fatalln("Error initializing database client:", err)
 		}
 
-		// Call our FB Realtime Database and return what matches the request query
-		q := client.NewRef(directory).OrderByKey()
-
 		ref := client.NewRef(directory)
-
-		result, err := q.GetOrdered(ctx)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		var strSlice []string
-
-		// Results will be logged in the increasing order of balance.
-		for _, r := range result {
-			var acc Signature
-
-			if err := r.Unmarshal(&acc); err != nil {
-				log.Fatal(err)
-			}
-
-			strSlice = append(strSlice, r.Key())
-
-		}
 
 		rClient, err := ethclient.Dial(rpc)
 		if err != nil {
@@ -128,79 +106,33 @@ var signCmd = &cobra.Command{
 
 		contractAddress := common.HexToAddress(cAddress)
 		query := ethereum.FilterQuery{
-			// You could specify blocks here...
-			/* FromBlock: big.NewInt(10485867),
-			ToBlock:   big.NewInt(239420100), */
-
 			Addresses: []common.Address{
 				contractAddress,
 			},
 			Topics: [][]common.Hash{{common.HexToHash("0x5e91ea8ea1c46300eb761859be01d7b16d44389ef91e03a163a87413cbf55b95")}},
 		}
 
-		logs, err := rClient.FilterLogs(context.Background(), query)
+		logs := make(chan types.Log)
+		sub, err := rClient.SubscribeFilterLogs(context.Background(), query, logs)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		var s2 []string
-
-		items := []donation{}
-
-		box := donos{items}
-
 		Counter := 0
 
-		for _, vLog := range logs {
-
-			test := common.HexToAddress(vLog.Topics[1].Hex()).String()
-
-			if slices.Contains(s2, test) == true {
-				/* fmt.Println("Multiple Donator:", test) */
-			} else {
-
+		for {
+			select {
+			case err := <-sub.Err():
+				log.Fatal(err)
+			case vLog := <-logs:
 				toAppend := common.HexToAddress(vLog.Topics[1].Hex())
-
 				s := fmt.Sprintf("%.18f", weiToEther(vLog.Topics[2].Big()))
-
-				s2 = append(s2, toAppend.String())
 
 				currentDono := donation{
 					from:   toAppend.String(),
 					amount: s,
 					toSign: true,
 				}
-
-				box.AddItem(currentDono)
-
-				Counter++
-			}
-		}
-
-		Counter2 := 0
-
-		// Check slice a (s2) against slice b (strSlice)
-		for i := 0; i < len(strSlice); i++ {
-			idx := slices.Contains(s2, strSlice[i])
-			if idx {
-				/* fmt.Println("Already Signed:", strSlice[i]) */
-				Counter2++
-				RemoveIndex(s2, slices.Index(s2, strSlice[i]))
-			}
-		}
-
-		for i := 0; i < len(strSlice); i++ {
-			result, key := isExists(strSlice[i], box.Items)
-
-			if result {
-				box.Items[key].toSign = false
-			}
-		}
-
-		Counter3 := 0
-
-		for i := 0; i < len(box.Items); i++ {
-			if box.Items[i].toSign {
 
 				signerData := signercore.TypedData{
 					Types: signercore.Types{
@@ -227,10 +159,10 @@ var signCmd = &cobra.Command{
 					},
 					Message: signercore.TypedDataMessage{
 						"sender":    signerPublic,
-						"recipient": box.Items[i].from,
-						"pledge":    box.Items[i].amount,
+						"recipient": currentDono.from,
+						"pledge":    currentDono.amount,
 						"timestamp": fmt.Sprint(time.Now().Unix()),
-						"msg":       message,
+						"msg":       lmessage,
 					},
 				}
 
@@ -253,10 +185,10 @@ var signCmd = &cobra.Command{
 					},
 					Message: signercore.TypedDataMessage{
 						"sender":    signerPublic,
-						"recipient": box.Items[i].from,
-						"pledge":    box.Items[i].amount,
+						"recipient": currentDono.from,
+						"pledge":    currentDono.amount,
 						"timestamp": fmt.Sprint(time.Now().Unix()),
-						"msg":       message,
+						"msg":       lmessage,
 					},
 				}
 
@@ -295,7 +227,7 @@ var signCmd = &cobra.Command{
 
 				output := string(data)
 
-				usersRef := ref.Child(box.Items[i].from)
+				usersRef := ref.Child(currentDono.from)
 
 				err2 := usersRef.Set(ctx, DbSignature{
 					signercore.TypedData{
@@ -309,93 +241,18 @@ var signCmd = &cobra.Command{
 				if err2 != nil {
 					log.Fatalln("Error setting value:", err)
 				}
-				Counter3++
+				Counter++
+				fmt.Println("Signed and stored a message for address", currentDono.from, "\n")
+				fmt.Println("Signed so far while listening:", Counter, "\n")
 			}
 		}
-
-		fmt.Println("Donation Events Total:", len(logs), "\n")
-		fmt.Println("Unique Donation Events:", Counter, "\n")
-		fmt.Println("Unique Signatures (DB):", Counter2+Counter3, "\n")
-		fmt.Println("Messages Signed/Stored This Run:", Counter3, "\n")
-
 	},
 }
-var message string
 
-type Signature struct {
-	Message struct {
-		Msg       string `json:"msg"`
-		Pledge    string `json:"pledge"`
-		Recipient string `json:"recipient"`
-		Sender    string `json:"sender"`
-		Timestamp string `json:"timestamp"`
-	} `json:"message"`
-	Signature string `json:"signature"`
-	TypedData string `json:"typedData"`
-}
-
-type DbSignature struct {
-	signercore.TypedData
-	Signature2 string `json:"signature"`
-	TypedData2 string `json:"typedData"`
-}
-
-type donation struct {
-	from   string
-	amount string
-	toSign bool
-}
-
-type donos struct {
-	Items []donation
-}
+var lmessage string
 
 func init() {
-	rootCmd.AddCommand(signCmd)
-	signCmd.Flags().StringVarP(&message, "message", "m", "", "Message to be signed")
-	signCmd.MarkFlagRequired("message")
-}
-
-func RemoveIndex(slice []string, index int) []string {
-	return append(slice[:index], slice[index+1:]...)
-}
-
-func removeDuplicateStr(strSlice []string) []string {
-	allKeys := make(map[string]bool)
-	list := []string{}
-	for _, item := range strSlice {
-		if _, value := allKeys[item]; !value {
-			allKeys[item] = true
-			list = append(list, item)
-		}
-	}
-	return list
-}
-
-const (
-	Wei   = 1
-	GWei  = 1e9
-	Ether = 1e18
-)
-
-func weiToEther(wei *big.Int) *big.Float {
-	return new(big.Float).Quo(new(big.Float).SetInt(wei), big.NewFloat(Ether))
-}
-
-func (donoBox *donos) AddItem(item donation) []donation {
-	donoBox.Items = append(donoBox.Items, item)
-	return donoBox.Items
-}
-
-func isExists(id string, box2 []donation) (result bool, rKey int) {
-	result = false
-	rKey = 0
-	for key, donoor := range box2 {
-		if donoor.from == id {
-			result = true
-			rKey = key
-			break
-		}
-	}
-	return result, rKey
+	rootCmd.AddCommand(listenCmd)
+	listenCmd.Flags().StringVarP(&lmessage, "lmessage", "l", "", "Listen Message to be signed")
+	listenCmd.MarkFlagRequired("lmessage")
 }
