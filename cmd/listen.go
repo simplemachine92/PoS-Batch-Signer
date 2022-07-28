@@ -1,6 +1,3 @@
-/*
-Copyright © 2022 Justin Pulley <justinpulley@gitcoin.co>
-*/
 package cmd
 
 import (
